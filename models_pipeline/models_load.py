@@ -13,15 +13,24 @@ class Model_controler():
 
         pass
 
-
-    def pipeline(self):
+    
+    def download_model(self):
         # Download/Load the model into a specific folder
-        model, tokenizer = self.download_and_load_model(
+        self.model, self.tokenizer = self.download_and_load_model(
             model_id=self.model_name, 
             save_folder="./my_local_models"
         )
+        
 
+
+    def pipeline(self, prompt):
         # Prompt Example
-        prompt = "Write a short poem about a server rack."
-        response = self.selected_model.generate_response(model, prompt, tokenizer)
+        prompt = "Write a short poem about a server rack. Make it about Dexter series."
+        response = self.selected_model.generate_response(self.model, prompt, self.tokenizer)
         print(response)
+
+
+
+name = "LLaMAX/LLaMAX3-8B-Alpaca"
+controler = Model_controler(name)
+controler.pipeline()
