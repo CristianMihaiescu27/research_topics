@@ -13,4 +13,5 @@
 
 Models:
 LLaMAX/LLaMAX3-8B-Alpaca (has as primary languages all 3)
+RedHatAI/gemma-3n-E4B-it-FP8-dynamic
 
