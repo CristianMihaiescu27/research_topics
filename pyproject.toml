@@ -1,0 +1,39 @@
+[project]
+name = "research-topics"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "accelerate>=1.15.0",
+    "huggingface-hub>=1.31.0",
+    "pandas>=3.0.0",
+    "torch>=2.6.0",
+    "transformers>=5.17.0",
+]
+
+[dependency-groups]
+dev = ["ruff", "pyright"]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "ARG001", # unused arguments in functions
+    "COM812", # missing trailing comma (explodes wrapped calls one-per-line)
+]
+ignore = [
+    "E501",  # line too long
+]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.pyright]
+typeCheckingMode = "standard"
+pythonVersion = "3.13"
+venvPath = "."
+venv = ".venv"
