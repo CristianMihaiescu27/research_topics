@@ -1,36 +1,64 @@
-from models_pipeline.llama3 import Llama3
-from gemma3 import Gemma3
-from llama2 import Llama2
+import torch
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PreTrainedModel,
+    PreTrainedTokenizerBase,
+)
 
-class Model_controler():
-    def __init__(self, model_name):
-        self.model_name = model_name
+MODELS = [
+    'Qwen/Qwen3-8B',
+    'SeaLLMs/SeaLLMs-v3-7B-Chat',
+    'google/gemma-4-E4B-it',
+]
+BATCH_SIZE = 16
 
-        self.models = {"LLaMAX/LLaMAX3-8B-Alpaca": Llama3(), "RedHatAI/gemma-3n-E4B-it-FP8-dynamic": Gemma3(),
-                       "LLaMAX/LLaMAX2-7B": Llama2}
 
-        self.selected_model = self.models[self.model_name]
+def load_model(model_id: str) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
+    tokenizer = AutoTokenizer.from_pretrained(model_id, padding_side='left')
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        dtype=torch.bfloat16,
+        device_map='cuda',
+    )
+    return model, tokenizer
 
-        pass
 
-    
-    def download_model(self):
-        # Download/Load the model into a specific folder
-        self.model, self.tokenizer = self.download_and_load_model(
-            model_id=self.model_name, 
-            save_folder="./my_local_models"
+def generate_response(
+    model: PreTrainedModel,
+    tokenizer: PreTrainedTokenizerBase,
+    prompts: list[str],
+    max_new_tokens: int,
+) -> list[str]:
+    # qwen3 would otherwise write a reasoning trace before answering, the other templates ignore it
+    chats: list[str] = [
+        tokenizer.apply_chat_template(  # pyright: ignore[reportAssignmentType]
+            [{'role': 'user', 'content': prompt}],
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=False,
         )
-        
-
-
-    def pipeline(self, prompt):
-        # Prompt Example
-        prompt = "Write a short poem about a server rack. Make it about Dexter series."
-        response = self.selected_model.generate_response(self.model, prompt, self.tokenizer)
-        print(response)
-
-
-
-name = "LLaMAX/LLaMAX3-8B-Alpaca"
-controler = Model_controler(name)
-controler.pipeline()
+        for prompt in prompts
+    ]
+    responses = []
+    for start in range(0, len(chats), BATCH_SIZE):
+        inputs = tokenizer(
+            chats[start : start + BATCH_SIZE],
+            return_tensors='pt',
+            padding=True,
+            add_special_tokens=False,
+        ).to(model.device)
+        with torch.no_grad():
+            outputs = model.generate(  # pyright: ignore[reportCallIssue]
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                do_sample=False,
+                temperature=None,
+                top_p=None,
+                top_k=None,
+            )
+        new = outputs[:, inputs['input_ids'].shape[1] :]
+        responses += [
+            r.strip() for r in tokenizer.batch_decode(new, skip_special_tokens=True)
+        ]
+    return responses
