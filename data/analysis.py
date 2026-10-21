@@ -18,12 +18,12 @@ def hop_visualization(values):
         yval = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2, yval + 1.5, f"{yval}", ha='center', va='bottom')
 
-    ax.set_ylim(0, 100)
+    ax.set_ylim(0, 130)
     plt.show()
     
     
 def fact_type_visualization(values):
-    labels = ['Slow', 'Fast', 'Never']
+    labels = ['Fast', 'Slow', 'Never']
 
     fig, ax = plt.subplots(figsize=(8, 5))
     bars = ax.bar(labels, values, color=['#4C72B0', '#55A868', '#C44E52'])
