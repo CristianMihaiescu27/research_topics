@@ -11,4 +11,4 @@ set -euo pipefail
 # compute nodes have no internet, download.py fills the cache from the login node
 export HF_HUB_OFFLINE=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-srun uv run --frozen python run.py "$1"
+srun uv run --frozen python run.py "$@"

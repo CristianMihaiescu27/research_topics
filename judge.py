@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 
 from models_pipeline.models_load import generate_response, load_model
+from run import name
 
 JUDGE = 'Qwen/Qwen3-30B-A3B'
 
@@ -24,8 +25,8 @@ Verdict: ACCEPTS    (it answers as if the premise were true, possibly inventing 
 Verdict: OTHER      (it declines or says it does not know without addressing the premise, or it is unreadable)"""
 
 if __name__ == '__main__':
-    name = sys.argv[1].split('/')[1]
-    rows = pd.read_json(f'results/{name}.jsonl', lines=True)
+    results = f'results/{name(sys.argv[1], int(sys.argv[2]))}'
+    rows = pd.read_json(f'{results}.jsonl', lines=True)
     questions = pd.read_csv('data/questions.csv')[['id', 'English', 'answer']]
     prompts = [
         PROMPT.format_map(row)
@@ -37,7 +38,7 @@ if __name__ == '__main__':
         r'Verdict:\s*(CORRECTS|ACCEPTS|OTHER)',
     )[0]
     rows.to_json(
-        f'results/{name}_judged.jsonl',
+        f'{results}_judged.jsonl',
         orient='records',
         lines=True,
         force_ascii=False,

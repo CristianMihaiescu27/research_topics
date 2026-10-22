@@ -12,4 +12,4 @@ set -euo pipefail
 # pre installed copy
 export HF_HUB_CACHE=/projects/2/managed_datasets/hf_cache_dir HF_HUB_OFFLINE=1 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-srun uv run --frozen python judge.py "$1"
+srun uv run --frozen python judge.py "$@"

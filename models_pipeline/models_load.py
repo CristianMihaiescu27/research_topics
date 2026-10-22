@@ -12,6 +12,12 @@ MODELS = [
     'google/gemma-4-E4B-it',
 ]
 BATCH_SIZE = 16
+# qwen3's generation_config holds its thinking-mode settings, these are the ones its model card
+# gives for enable_thinking=False. the other two models sample with their own generation_config
+SAMPLING = {
+    'Qwen/Qwen3-8B': {'temperature': 0.7, 'top_p': 0.8, 'top_k': 20},
+}
+GREEDY = {'do_sample': False, 'temperature': None, 'top_p': None, 'top_k': None}
 
 
 def load_model(model_id: str) -> tuple[PreTrainedModel, PreTrainedTokenizerBase]:
@@ -29,7 +35,13 @@ def generate_response(
     tokenizer: PreTrainedTokenizerBase,
     prompts: list[str],
     max_new_tokens: int,
+    sample: bool = False,
 ) -> list[str]:
+    decoding = (
+        {'do_sample': True, **SAMPLING.get(model.name_or_path or '', {})}
+        if sample
+        else GREEDY
+    )
     # qwen3 would otherwise write a reasoning trace before answering, the other templates ignore it
     chats: list[str] = [
         tokenizer.apply_chat_template(  # pyright: ignore[reportAssignmentType]
@@ -52,10 +64,7 @@ def generate_response(
             outputs = model.generate(  # pyright: ignore[reportCallIssue]
                 **inputs,
                 max_new_tokens=max_new_tokens,
-                do_sample=False,
-                temperature=None,
-                top_p=None,
-                top_k=None,
+                **decoding,
             )
         new = outputs[:, inputs['input_ids'].shape[1] :]
         responses += [
