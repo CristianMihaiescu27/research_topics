@@ -13,11 +13,15 @@ COLORS = ['green', 'tomato', 'gray']
 OUT = Path('figures')
 
 
-def summarize(model: str) -> pd.DataFrame:
-    rows = pd.concat(
+def judged(model: str) -> pd.DataFrame:
+    return pd.concat(
         pd.read_json(path, lines=True).assign(run=path.parent.name)
         for path in sorted(Path().glob(f'run_*/{model}_judged.jsonl'))
     )
+
+
+def summarize(model: str) -> pd.DataFrame:
+    rows = judged(model)
     counts = (
         rows.groupby(['run', 'language'])
         .verdict.value_counts()
@@ -30,6 +34,25 @@ def summarize(model: str) -> pd.DataFrame:
     summary['ACCEPTS_rate_std'] = per_run.ACCEPTS_rate.std()
     summary['runs'] = per_run.size()
     return summary.sort_values('ACCEPTS_rate', ascending=False)
+
+
+def fact_types() -> pd.DataFrame:
+    facts = pd.read_csv('data/questions.csv')[['id', 'fact_type']]
+    rates = {}
+    for model, short in MODELS.items():
+        rows = judged(model).merge(facts, on='id')
+        accepted = (
+            rows.verdict.eq('ACCEPTS')
+            .groupby([rows.language, rows.fact_type])
+            .mean()
+            .mul(100)
+        )
+        for fact in ['never', 'slow']:
+            rates[f'{short}_{fact}'] = accepted.xs(
+                f'{fact}-changing',
+                level='fact_type',
+            )
+    return pd.DataFrame(rates)
 
 
 def plot_counts(summary: pd.DataFrame, model: str, path: Path) -> None:
@@ -83,3 +106,4 @@ if __name__ == '__main__':
             summary[['ACCEPTS_rate', 'ACCEPTS_rate_std', 'runs']].round(2),
             flush=True,
         )
+    fact_types().round(4).to_csv(OUT / 'fact_types.csv')
